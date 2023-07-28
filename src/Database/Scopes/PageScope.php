@@ -2,6 +2,7 @@
 
 namespace Matchish\ScoutElasticSearch\Database\Scopes;
 
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Scope;
@@ -38,6 +39,10 @@ class PageScope implements Scope
      */
     public function apply(Builder $builder, Model $model)
     {
-        $builder->forPage($this->page, $this->perPage);
+        if (config('elasticsearch.pagination_mode') === 'advanced') {
+            return $builder->forPageAfterId($this->perPage, Cache::get('scout_import_last_id', 0), $model->getKeyName());
+        }
+
+        return  $builder->forPage($this->page, $this->perPage);
     }
 }

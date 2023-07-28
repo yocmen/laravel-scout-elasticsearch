@@ -9,6 +9,7 @@ return [
     'queue' => [
         'timeout' => env('SCOUT_QUEUE_TIMEOUT'),
     ],
+    'pagination_mode' => env('ELASTICSEARCH_PAGINATION_MODE', 'simple'),
     'indices' => [
         'mappings' => [
             'default' => [
