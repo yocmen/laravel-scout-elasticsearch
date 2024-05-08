@@ -29,7 +29,7 @@ final class SwitchToNewAndRemoveOldIndexTest extends IntegrationTestCase
 
         $newIndexExist = $this->elasticsearch->indices()->exists(['index' => 'products_new'])->asBool();
         $oldIndexExist = $this->elasticsearch->indices()->exists(['index' => 'products_old'])->asBool();
-        $alias = $this->elasticsearch->indices()->getAlias(['index' => 'products_new'])->asArray();
+        $alias = $this->elasticsearch->indices()->getAlias(['index' => 'products_new']);
 
         $this->assertTrue($newIndexExist);
         $this->assertFalse($oldIndexExist);

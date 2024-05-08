@@ -2,8 +2,8 @@
 
 namespace Matchish\ScoutElasticSearch\Engines;
 
-use Elastic\Elasticsearch\Client;
-use Elastic\Elasticsearch\Exception\ServerResponseException;
+use OpenSearch\Client;
+use OpenSearch\Exception\ServerResponseException;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\LazyCollection;
 use Laravel\Scout\Builder;
@@ -45,7 +45,7 @@ final class ElasticSearchEngine extends Engine
     {
         $params = new Bulk();
         $params->index($models);
-        $response = $this->elasticsearch->bulk($params->toArray())->asArray();
+        $response = $this->elasticsearch->bulk($params->toArray());
         if (array_key_exists('errors', $response) && $response['errors']) {
             $error = new ServerResponseException(json_encode($response, JSON_PRETTY_PRINT));
             throw new \Exception('Bulk update error', $error->getCode(), $error);
@@ -204,6 +204,6 @@ final class ElasticSearchEngine extends Engine
         $indexName = $builder->index ?: $model->searchableAs();
         $params = new SearchParams($indexName, $searchBody->toArray());
 
-        return $this->elasticsearch->search($params->toArray())->asArray();
+        return $this->elasticsearch->search($params->toArray());
     }
 }

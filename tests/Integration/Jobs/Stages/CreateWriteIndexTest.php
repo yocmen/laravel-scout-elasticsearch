@@ -5,9 +5,9 @@ declare(strict_types=1);
 namespace Tests\Integration\Jobs\Stages;
 
 use App\Product;
-use Elastic\Elasticsearch\Client;
-use Elastic\Elasticsearch\Exception\ClientResponseException;
-use Elastic\Elasticsearch\Exception\ServerResponseException;
+use OpenSearch\Client;
+use OpenSearch\Exception\ClientResponseException;
+use OpenSearch\Exception\ServerResponseException;
 use Matchish\ScoutElasticSearch\ElasticSearch\Index;
 use Matchish\ScoutElasticSearch\Jobs\Stages\CreateWriteIndex;
 use Matchish\ScoutElasticSearch\Searchable\DefaultImportSourceFactory;
@@ -25,7 +25,7 @@ final class CreateWriteIndexTest extends IntegrationTestCase
         $elasticsearch = $this->app->make(Client::class);
         $stage = new CreateWriteIndex(DefaultImportSourceFactory::from(Product::class), Index::fromSource(DefaultImportSourceFactory::from(Product::class)));
         $stage->handle($elasticsearch);
-        $response = $elasticsearch->indices()->getAlias(['index' => '*', 'name' => 'products'])->asArray();
+        $response = $elasticsearch->indices()->getAlias(['index' => '*', 'name' => 'products']);
         $this->assertTrue($this->containsWriteIndex($response));
     }
 

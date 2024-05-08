@@ -2,8 +2,8 @@
 
 namespace Matchish\ScoutElasticSearch\Jobs\Stages;
 
-use Elastic\Elasticsearch\Client;
-use Elastic\Elasticsearch\Exception\ClientResponseException;
+use OpenSearch\Client;
+use OpenSearch\Exception\ClientResponseException;
 use Matchish\ScoutElasticSearch\ElasticSearch\Params\Indices\Alias\Get as GetAliasParams;
 use Matchish\ScoutElasticSearch\ElasticSearch\Params\Indices\Delete as DeleteIndexParams;
 use Matchish\ScoutElasticSearch\Searchable\ImportSource;
@@ -31,7 +31,7 @@ final class CleanUp implements StageInterface
         $source = $this->source;
         $params = GetAliasParams::anyIndex($source->searchableAs());
         try {
-            $response = $elasticsearch->indices()->getAlias($params->toArray())->asArray();
+            $response = $elasticsearch->indices()->getAlias($params->toArray());
         } catch (ClientResponseException $e) {
             $response = [];
         }

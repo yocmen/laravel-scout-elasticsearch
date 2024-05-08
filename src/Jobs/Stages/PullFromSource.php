@@ -2,7 +2,7 @@
 
 namespace Matchish\ScoutElasticSearch\Jobs\Stages;
 
-use Elastic\Elasticsearch\Client;
+use OpenSearch\Client;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
 use Matchish\ScoutElasticSearch\Searchable\ImportSource;

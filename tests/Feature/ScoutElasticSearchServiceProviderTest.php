@@ -2,7 +2,7 @@
 
 namespace Matchish\ScoutElasticSearch;
 
-use Elastic\Elasticsearch\Client;
+use OpenSearch\Client;
 use Elastic\Transport\Exception\NoNodeAvailableException;
 use Tests\TestCase;
 

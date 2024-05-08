@@ -22,7 +22,7 @@ final class ElasticSearchEngineTest extends IntegrationTestCase
         Artisan::call('scout:import');
 
         $results = Product::search('Quia', static function ($client, $body) {
-            return $client->search(['index' => 'products', 'body' => $body->toArray()])->asArray();
+            return $client->search(['index' => 'products', 'body' => $body->toArray()]);
         })->raw();
 
         $this->assertIsArray($results);
@@ -41,7 +41,7 @@ final class ElasticSearchEngineTest extends IntegrationTestCase
         Artisan::call('scout:import');
 
         $results = Product::search('iphone', static function ($client, $body) {
-            return $client->search(['index' => 'products', 'body' => $body->toArray()])->asArray();
+            return $client->search(['index' => 'products', 'body' => $body->toArray()]);
         })->raw();
 
         $this->assertIsArray($results);

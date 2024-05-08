@@ -3,7 +3,7 @@
 namespace Tests;
 
 use App\Product;
-use Elastic\Elasticsearch\Client;
+use OpenSearch\Client;
 
 /**
  * Class IntegrationTestCase.
