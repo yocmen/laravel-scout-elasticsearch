@@ -44,13 +44,15 @@ final class Bulk
                 if ($model::usesSoftDelete() && config('scout.soft_delete', false)) {
                     $model->pushSoftDeleteMetadata();
                 }
-                $routing = $model->routing;
+
+                $attributes = $model->getAttributes();
+                $routing = array_key_exists('routing', $attributes) ? $model->routing : null;
                 $scoutKey = $model->getScoutKey();
+
                 $payload['body'][] = [
                     'index' => [
                         '_index' => $model->searchableAs(),
                         '_id' => $scoutKey,
-                        '_type' => '_doc',
                         'routing' => false === empty($routing) ? $routing : $scoutKey,
                     ],
                 ];
@@ -65,15 +67,17 @@ final class Bulk
 
                 return $payload;
             }, $payload);
+
         $payload = collect($this->deleteDocs)->reduce(
             function ($payload, $model) {
-                $routing = $model->routing;
+                $attributes = $model->getAttributes();
+                $routing = array_key_exists('routing', $attributes) ? $model->routing : null;
                 $scoutKey = $model->getScoutKey();
+
                 $payload['body'][] = [
                     'delete' => [
                         '_index' => $model->searchableAs(),
                         '_id' => $scoutKey,
-                        '_type' => '_doc',
                         'routing' => false === empty($routing) ? $routing : $scoutKey,
                     ],
                 ];

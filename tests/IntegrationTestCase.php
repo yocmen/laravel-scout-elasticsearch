@@ -2,7 +2,8 @@
 
 namespace Tests;
 
-use Elasticsearch\Client;
+use App\Product;
+use Elastic\Elasticsearch\Client;
 
 /**
  * Class IntegrationTestCase.
@@ -41,5 +42,6 @@ class IntegrationTestCase extends TestCase
                 ],
             ],
         ]);
+        Product::preventAccessingMissingAttributes();
     }
 }

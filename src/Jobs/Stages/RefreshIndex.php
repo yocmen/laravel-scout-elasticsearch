@@ -2,14 +2,14 @@
 
 namespace Matchish\ScoutElasticSearch\Jobs\Stages;
 
-use Elasticsearch\Client;
+use Elastic\Elasticsearch\Client;
 use Matchish\ScoutElasticSearch\ElasticSearch\Index;
 use Matchish\ScoutElasticSearch\ElasticSearch\Params\Indices\Refresh;
 
 /**
  * @internal
  */
-final class RefreshIndex
+final class RefreshIndex implements StageInterface
 {
     /**
      * @var Index

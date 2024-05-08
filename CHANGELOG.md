@@ -6,6 +6,39 @@ and this project adheres to [Semantic Versioning](http://semver.org/)
 
 ## [Unreleased]
 
+## [7.6.0] - 2024-02-23
+### Added
+- Add one more condition. If the search() method does not pass any parameter, there is no need to add QueryStringQuery object.
+  
+## [7.5.0] - 2023-11-30
+### Added
+- [Added support for php 8.3](https://github.com/matchish/laravel-scout-elasticsearch/pull/266)
+  
+## [7.3.0] - 2023-07-31
+### Added
+- [Added support for `makeSearchableUsing` in Laravel Scout. This allows you to prepare and modify a collection of models before they are made searchable. For example, you may want to eager load a relationship so that the relationship data can be efficiently added to your search index.](https://github.com/matchish/laravel-scout-elasticsearch/pull/253)
+
+## [7.2.2] - 2023-06-06
+### Fixed
+- [No duplicates in search on reindex anymore. updates/inserts will be visible only after reindex. For most projects should be ok but for some could be breaking changes](https://github.com/matchish/laravel-scout-elasticsearch/issues/247)
+
+## [7.0.0] - 2023-02-01
+### Changed
+- No duplicates in search on reindex anymore. updates/inserts will be visible only after reindex. For most projects should be ok but for some could be breaking changes
+
+## [6.0.2] - 2022-06-16
+### Added
+- Elasticsearch basic authentication support
+- Elasticsearch CloudId and Api Key credential support
+
+## [6.0.1] - 2022-06-09
+### Added
+- LazyMap implemented for ElasticsearchEngine
+
+## [6.0.0] - 2022-04-30
+### Added
+- Elasticsearch 8 Support
+
 ## [5.0.2] - 2022-03-24
 ### Added
 -  multiple ElasticSearch nodes support
