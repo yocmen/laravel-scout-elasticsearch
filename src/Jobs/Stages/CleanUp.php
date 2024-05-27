@@ -2,11 +2,11 @@
 
 namespace Matchish\ScoutElasticSearch\Jobs\Stages;
 
-use OpenSearch\Client;
-use OpenSearch\Exception\ClientResponseException;
 use Matchish\ScoutElasticSearch\ElasticSearch\Params\Indices\Alias\Get as GetAliasParams;
 use Matchish\ScoutElasticSearch\ElasticSearch\Params\Indices\Delete as DeleteIndexParams;
 use Matchish\ScoutElasticSearch\Searchable\ImportSource;
+use OpenSearch\Client;
+use OpenSearch\Common\Exceptions\Missing404Exception;
 
 /**
  * @internal
@@ -32,7 +32,7 @@ final class CleanUp implements StageInterface
         $params = GetAliasParams::anyIndex($source->searchableAs());
         try {
             $response = $elasticsearch->indices()->getAlias($params->toArray());
-        } catch (ClientResponseException $e) {
+        } catch (Missing404Exception $e) {
             $response = [];
         }
         foreach ($response as $indexName => $data) {
