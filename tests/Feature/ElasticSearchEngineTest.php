@@ -10,7 +10,10 @@ use Tests\IntegrationTestCase;
 
 final class ElasticSearchEngineTest extends IntegrationTestCase
 {
-    public function test_pass_empty_response(): void
+    /**
+     * @test
+     */
+    public function pass_empty_response(): void
     {
         $dispatcher = Product::getEventDispatcher();
         Product::unsetEventDispatcher();
@@ -29,7 +32,10 @@ final class ElasticSearchEngineTest extends IntegrationTestCase
         $this->assertEmpty($results['hits']['hits']);
     }
 
-    public function test_pass_with_response(): void
+    /**
+     * @test
+     */
+    public function pass_with_response(): void
     {
         $dispatcher = Product::getEventDispatcher();
         Product::unsetEventDispatcher();

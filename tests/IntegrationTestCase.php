@@ -16,7 +16,7 @@ class IntegrationTestCase extends TestCase
     protected $elasticsearch;
 
     /**
-     * {@inheritdoc}
+     * @inheritdoc
      */
     public function setUp(): void
     {

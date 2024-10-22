@@ -113,6 +113,7 @@ final class ImportCommandTest extends IntegrationTestCase
         $this->app['config']['scout.key'] = 'title';
 
         $dispatcher = Book::getEventDispatcher();
+
         Book::unsetEventDispatcher();
 
         $booksAmount = 10;
@@ -122,6 +123,7 @@ final class ImportCommandTest extends IntegrationTestCase
         Book::setEventDispatcher($dispatcher);
 
         Artisan::call('scout:import');
+
         $params = [
             'index' => (new BookWithCustomKey())->searchableAs(),
             'body' => [
@@ -130,7 +132,9 @@ final class ImportCommandTest extends IntegrationTestCase
                 ],
             ],
         ];
+
         $response = $this->elasticsearch->search($params);
+
         $this->assertEquals($booksAmount, $response['hits']['total']['value']);
     }
 
@@ -179,15 +183,15 @@ final class ImportCommandTest extends IntegrationTestCase
         );
         $this->assertEquals(
             '[OK] '.trans('scout::import.done', ['searchable' => Product::class]),
-            trim($output[14])
+            trim($output[17])
         );
         $this->assertEquals(
             trans('scout::import.start', ['searchable' => Book::class]),
-            trim($output[16])
+            trim($output[19])
         );
         $this->assertEquals(
             '[OK] '.trans('scout::import.done', ['searchable' => Book::class]),
-            trim($output[30])
+            trim($output[36])
         );
     }
 
