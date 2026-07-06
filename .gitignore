@@ -5,3 +5,10 @@ composer.lock
 .env
 .phpunit.result.cache
 /vendor/
+.DS_Store
+.php-cs-fixer.cache
+.php_cs.cache
+/build/
+coverage/
+coverage.xml
+clover.xml

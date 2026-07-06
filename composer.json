@@ -42,6 +42,19 @@
             "Matchish\\ScoutElasticSearch\\": "src/"
         }
     },
+    "scripts": {
+        "test": "phpunit",
+        "analyse": "phpstan analyse",
+        "quality": [
+            "@composer validate --strict",
+            "@test"
+        ]
+    },
+    "scripts-descriptions": {
+        "test": "Run the PHPUnit test suite",
+        "analyse": "Run PHPStan (Larastan) static analysis at level max (not yet in the quality gate: baseline still has pre-existing errors)",
+        "quality": "Run all quality checks before committing: composer validate and tests"
+    },
     "extra": {
         "laravel": {
             "providers": [

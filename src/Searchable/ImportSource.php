@@ -16,4 +16,9 @@ interface ImportSource
     public function chunked(): Collection;
 
     public function get(): EloquentCollection;
+
+    /**
+     * Total number of records the source is expected to index.
+     */
+    public function count(): int;
 }

@@ -53,6 +53,86 @@ final class ImportCommandTest extends IntegrationTestCase
     /**
      * @test
      */
+    public function reindex_summary_reports_document_counts(): void
+    {
+        $dispatcher = Product::getEventDispatcher();
+        Product::unsetEventDispatcher();
+
+        $searchableAmount = 4;
+        factory(Product::class, $searchableAmount)->create();
+
+        $unsearchableAmount = 2;
+        factory(Product::class, $unsearchableAmount)->states(['archive'])->create();
+
+        Product::setEventDispatcher($dispatcher);
+
+        $output = new BufferedOutput();
+        Artisan::call('scout:import', ['searchable' => [Product::class]], $output);
+
+        $output = $output->fetch();
+
+        // Summary header and the metric labels are rendered.
+        $this->assertStringContainsString('Reindex summary', $output);
+        $this->assertStringContainsString(trans('scout::import.summary.previous'), $output);
+        $this->assertStringContainsString(trans('scout::import.summary.indexed'), $output);
+
+        // Previous index did not exist yet, so it reports as a new index.
+        $this->assertStringContainsString(trans('scout::import.summary.none'), $output);
+
+        // Only the searchable products end up in the new index. The archived
+        // ones are filtered by shouldBeSearchable(), so a mismatch note is shown.
+        $this->assertStringContainsString((string) $searchableAmount, $output);
+        $this->assertStringContainsString(
+            trans('scout::import.mismatch', [
+                'indexed' => number_format($searchableAmount),
+                'expected' => number_format($searchableAmount + $unsearchableAmount),
+                'missing' => number_format($unsearchableAmount),
+            ]),
+            $output
+        );
+    }
+
+    /**
+     * @test
+     */
+    public function reindex_summary_reports_signed_difference_against_previous_index(): void
+    {
+        // Seed a previous index (aliased as "products") holding 2 documents.
+        $this->elasticsearch->indices()->create([
+            'index' => 'products_old',
+            'body' => [
+                'aliases' => ['products' => new stdClass()],
+                'settings' => ['number_of_shards' => 1, 'number_of_replicas' => 0],
+            ],
+        ]);
+        foreach ([1, 2] as $id) {
+            $this->elasticsearch->index([
+                'index' => 'products_old',
+                'id' => (string) $id,
+                'body' => ['type' => 'default'],
+            ]);
+        }
+        $this->elasticsearch->indices()->refresh(['index' => 'products_old']);
+
+        $dispatcher = Product::getEventDispatcher();
+        Product::unsetEventDispatcher();
+
+        // Import 5 searchable products, so the new index has +3 vs the previous.
+        factory(Product::class, 5)->create();
+        Product::setEventDispatcher($dispatcher);
+
+        $output = new BufferedOutput();
+        Artisan::call('scout:import', ['searchable' => [Product::class]], $output);
+
+        $output = $output->fetch();
+
+        $this->assertStringContainsString(trans('scout::import.summary.difference'), $output);
+        $this->assertStringContainsString('+3', $output);
+    }
+
+    /**
+     * @test
+     */
     public function import_entites_in_queue(): void
     {
         $this->app['config']->set('scout.queue', ['connection' => 'sync', 'queue' => 'scout']);
@@ -176,23 +256,12 @@ final class ImportCommandTest extends IntegrationTestCase
         $output = new BufferedOutput();
         Artisan::call('scout:import', ['searchable' => [Product::class, Book::class]], $output);
 
-        $output = explode("\n", $output->fetch());
-        $this->assertEquals(
-            trans('scout::import.start', ['searchable' => Product::class]),
-            trim($output[0])
-        );
-        $this->assertEquals(
-            '[OK] '.trans('scout::import.done', ['searchable' => Product::class]),
-            trim($output[17])
-        );
-        $this->assertEquals(
-            trans('scout::import.start', ['searchable' => Book::class]),
-            trim($output[19])
-        );
-        $this->assertEquals(
-            '[OK] '.trans('scout::import.done', ['searchable' => Book::class]),
-            trim($output[36])
-        );
+        $output = array_map('trim', explode("\n", $output->fetch()));
+
+        $this->assertContains(trans('scout::import.start', ['searchable' => Product::class]), $output);
+        $this->assertContains('[OK] '.trans('scout::import.done', ['searchable' => Product::class]), $output);
+        $this->assertContains(trans('scout::import.start', ['searchable' => Book::class]), $output);
+        $this->assertContains('[OK] '.trans('scout::import.done', ['searchable' => Book::class]), $output);
     }
 
     /**
