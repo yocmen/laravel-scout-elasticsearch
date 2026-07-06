@@ -6,7 +6,7 @@ use App\Product;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Scope;
-use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 use Matchish\ScoutElasticSearch\Searchable\DefaultImportSource;
 use Tests\TestCase;
 
@@ -29,22 +29,86 @@ class DefaultImportSourceTest extends TestCase
         $this->assertEquals($iphonePromoUsedAmount, $products->count());
     }
 
+    public function test_chunked_covers_every_searchable_exactly_once()
+    {
+        // scout.chunk.searchable is 3 in the test environment (see TestCase).
+        $this->createProducts(10);
+
+        $source = new DefaultImportSource(Product::class);
+        $chunks = $source->chunked();
+
+        // 10 rows / chunk size 3 => 4 chunks (3 + 3 + 3 + 1).
+        $this->assertCount(4, $chunks);
+
+        $importedKeys = $chunks
+            ->flatMap(fn (DefaultImportSource $chunk) => $chunk->get()->modelKeys())
+            ->sort()
+            ->values();
+
+        $expectedKeys = Product::orderBy('id')->pluck('id');
+
+        // Every key is imported once — no gaps, no duplicates across chunks.
+        $this->assertEquals($expectedKeys->all(), $importedKeys->all());
+    }
+
+    public function test_chunked_seeks_by_key_range_instead_of_offset()
+    {
+        $this->createProducts(10);
+
+        $source = new DefaultImportSource(Product::class);
+        $lastChunk = $source->chunked()->last();
+
+        DB::connection()->enableQueryLog();
+        $lastChunk->get();
+        $select = collect(DB::connection()->getQueryLog())->last()['query'];
+        DB::connection()->disableQueryLog();
+
+        // Keyset pagination: bounded by the primary key, never by OFFSET —
+        // this is what keeps the last chunk as fast as the first one.
+        $this->assertStringNotContainsStringIgnoringCase('offset', $select);
+        $this->assertStringContainsString('>', $select);
+        $this->assertStringContainsString('<=', $select);
+    }
+
+    public function test_chunked_handles_sparse_keys_after_deletes()
+    {
+        $this->createProducts(12);
+
+        // Soft-delete a few rows in the middle so the searchable set has gaps
+        // in its primary keys. Arithmetic offsets would still work here, but a
+        // keyset built from real keys must too.
+        Product::whereIn('id', [4, 5, 8])->delete();
+
+        $source = new DefaultImportSource(Product::class);
+        $chunks = $source->chunked();
+
+        $importedKeys = $chunks
+            ->flatMap(fn (DefaultImportSource $chunk) => $chunk->get()->modelKeys())
+            ->sort()
+            ->values();
+
+        $expectedKeys = Product::orderBy('id')->pluck('id');
+
+        $this->assertEquals($expectedKeys->all(), $importedKeys->all());
+        $this->assertCount(9, $importedKeys);
+    }
+
     /**
-     * Regression test: when a model has a global scope that adds an ORDER BY
-     * on a column other than the primary key, PageScope's keyset pagination
-     * on `id` is silently broken and rows are skipped across chunks.
+     * Regression test: a model global scope that adds an ORDER BY on a column
+     * other than the primary key must not break chunking. Keyset boundaries are
+     * built from a key-only ordering (reorder()), so chunks stay self-contained
+     * and cover every row — with no shared cursor state between them.
      */
-    public function test_chunked_iteration_visits_every_row_when_model_has_ordering_global_scope(): void
+    public function test_chunked_visits_every_row_when_model_has_ordering_global_scope(): void
     {
         $dispatcher = Product::getEventDispatcher();
         Product::unsetEventDispatcher();
 
         $this->app['config']->set('scout.chunk.searchable', 2);
 
-        // Create rows whose `price` is inversely correlated with `id`, so a
-        // competing ORDER BY price ASC produces a row order that is the exact
-        // reverse of ORDER BY id ASC. This is the simplest deterministic
-        // shape that exposes the chunking bug.
+        // Rows whose `price` is inversely correlated with `id`, so ORDER BY
+        // price ASC is the exact reverse of ORDER BY id ASC — the simplest
+        // shape that would expose a boundary computed on the wrong column.
         $totalRows = 10;
         for ($i = 1; $i <= $totalRows; $i++) {
             factory(Product::class)->create(['price' => $totalRows - $i]);
@@ -59,40 +123,39 @@ class DefaultImportSourceTest extends TestCase
         Product::setEventDispatcher($dispatcher);
 
         try {
-            Cache::forget('scout_import_last_id');
-
             $source = new DefaultImportSource(Product::class);
-            $chunks = $source->chunked();
 
-            $seen = [];
+            // No cache priming, no manual cursor — chunks run independently.
+            $seen = $source->chunked()
+                ->flatMap(fn (DefaultImportSource $chunk) => $chunk->get()->modelKeys())
+                ->map(fn ($id) => (int) $id)
+                ->unique()
+                ->sort()
+                ->values()
+                ->all();
 
-            foreach ($chunks as $chunkSource) {
-                $results = $chunkSource->get();
-                if ($results->isEmpty()) {
-                    continue;
-                }
-                foreach ($results as $row) {
-                    $seen[] = (int) $row->id;
-                }
-                Cache::put('scout_import_last_id', $results->last()->getKey());
-            }
-
-            $uniqueSeen = array_values(array_unique($seen));
-            sort($uniqueSeen);
-
-            $missing = array_values(array_diff($expectedIds, $uniqueSeen));
+            $missing = array_values(array_diff($expectedIds, $seen));
 
             $this->assertSame(
                 [],
                 $missing,
                 'Chunked import dropped rows: ['.implode(',', $missing).']. '
-                .'Visited ids: ['.implode(',', $uniqueSeen).']. '
+                .'Visited ids: ['.implode(',', $seen).']. '
                 .'Expected: ['.implode(',', $expectedIds).'].'
             );
         } finally {
-            Cache::forget('scout_import_last_id');
             $this->removeGlobalScopeFromProduct('test_order_by_price');
         }
+    }
+
+    private function createProducts(int $amount): void
+    {
+        $dispatcher = Product::getEventDispatcher();
+        Product::unsetEventDispatcher();
+
+        factory(Product::class, $amount)->create();
+
+        Product::setEventDispatcher($dispatcher);
     }
 
     private function removeGlobalScopeFromProduct(string $identifier): void

@@ -40,12 +40,13 @@ class ChunkScope implements Scope
     {
         $start = $this->start;
         $end = $this->end;
+        $key = $model->getQualifiedKeyName();
         $builder
-            ->when(! is_null($start), function ($query) use ($start, $model) {
-                return $query->where($model->getKeyName(), '>', $start);
+            ->when(! is_null($start), function ($query) use ($start, $key) {
+                return $query->where($key, '>', $start);
             })
-            ->when(! is_null($end), function ($query) use ($end, $model) {
-                return $query->where($model->getKeyName(), '<=', $end);
+            ->when(! is_null($end), function ($query) use ($end, $key) {
+                return $query->where($key, '<=', $end);
             });
     }
 

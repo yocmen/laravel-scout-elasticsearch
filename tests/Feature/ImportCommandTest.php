@@ -176,23 +176,25 @@ final class ImportCommandTest extends IntegrationTestCase
         $output = new BufferedOutput();
         Artisan::call('scout:import', ['searchable' => [Product::class, Book::class]], $output);
 
-        $output = explode("\n", $output->fetch());
-        $this->assertEquals(
-            trans('scout::import.start', ['searchable' => Product::class]),
-            trim($output[0])
-        );
-        $this->assertEquals(
-            '[OK] '.trans('scout::import.done', ['searchable' => Product::class]),
-            trim($output[17])
-        );
-        $this->assertEquals(
-            trans('scout::import.start', ['searchable' => Book::class]),
-            trim($output[19])
-        );
-        $this->assertEquals(
-            '[OK] '.trans('scout::import.done', ['searchable' => Book::class]),
-            trim($output[36])
-        );
+        $output = array_map('trim', explode("\n", $output->fetch()));
+
+        $productStart = trans('scout::import.start', ['searchable' => Product::class]);
+        $productDone = '[OK] '.trans('scout::import.done', ['searchable' => Product::class]);
+        $bookStart = trans('scout::import.start', ['searchable' => Book::class]);
+        $bookDone = '[OK] '.trans('scout::import.done', ['searchable' => Book::class]);
+
+        // Assert on the messages rather than hardcoded progress-bar line
+        // offsets so the test stays valid as the import pipeline's stage
+        // count changes.
+        foreach ([$productStart, $productDone, $bookStart, $bookDone] as $line) {
+            $this->assertContains($line, $output);
+        }
+
+        // Start precedes done for each searchable, and Product (passed first)
+        // is imported before Book.
+        $this->assertLessThan(array_search($productDone, $output), array_search($productStart, $output));
+        $this->assertLessThan(array_search($bookStart, $output), array_search($productDone, $output));
+        $this->assertLessThan(array_search($bookDone, $output), array_search($bookStart, $output));
     }
 
     /**

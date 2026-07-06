@@ -3,7 +3,6 @@
 namespace Matchish\ScoutElasticSearch\Jobs\Stages;
 
 use Illuminate\Support\Collection;
-use Illuminate\Support\Facades\Cache;
 use Matchish\ScoutElasticSearch\Searchable\ImportSource;
 use OpenSearch\Client;
 
@@ -32,10 +31,6 @@ final class PullFromSource implements StageInterface
         });
 
         if (! $results->isEmpty()) {
-            $last_key = $results->last()->getKey();
-
-            Cache::put('scout_import_last_id', $results->last()->getKey());
-
             $results->first()->searchableUsing()->update($results);
         }
     }
